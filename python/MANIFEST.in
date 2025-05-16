@@ -1,0 +1,4 @@
+graft openmm/
+graft openmmonnx/
+prune tests
+prune cibuildwheel_support
