@@ -3,9 +3,13 @@ import openmm.unit as unit
 import openmmonnx
 import numpy as np
 import pytest
+import os
+
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+test_dir = os.path.join(curr_dir, '..', '..', 'tests')
 
 def testConstructors():
-    model_file = '../../tests/central.onnx'
+    model_file = os.path.join(test_dir, 'central.onnx')
     force = openmmonnx.OnnxForce(model_file)
     model = open(model_file, 'rb').read()
     assert model == force.getModel()
@@ -25,7 +29,7 @@ def testForce(use_cv_force, platform):
         system.addParticle(1.0)
 
     # Create a force
-    force = openmmonnx.OnnxForce('../../tests/central.onnx', {'UseGraphs': 'false'})
+    force = openmmonnx.OnnxForce(os.path.join(test_dir, 'central.onnx'), {'UseGraphs': 'false'})
     assert force.getProperties()['UseGraphs'] == 'false'
     if use_cv_force:
         # Wrap OnnxForce into CustomCVForce
@@ -51,14 +55,14 @@ def testForce(use_cv_force, platform):
 
 def testProperties():
     """ Test that the properties are correctly set and retrieved """
-    force = openmmonnx.OnnxForce('../../tests/central.onnx')
+    force = openmmonnx.OnnxForce(os.path.join(test_dir, 'central.onnx'))
     force.setProperty('UseGraphs', 'true')
     assert force.getProperties()['UseGraphs'] == 'true'
     force.setProperty('UseGraphs', 'false')
     assert force.getProperties()['UseGraphs'] == 'false'
 
 def testSerialization():
-    force1 = openmmonnx.OnnxForce('../../tests/central.onnx')
+    force1 = openmmonnx.OnnxForce(os.path.join(test_dir, 'central.onnx'))
     xml1 = mm.XmlSerializer.serialize(force1)
     force2 = mm.XmlSerializer.deserialize(xml1)
     xml2 = mm.XmlSerializer.serialize(force2)
