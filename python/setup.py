@@ -16,6 +16,22 @@ if platform.system() == 'Darwin':
     extra_link_args += ['-stdlib=libc++', '-mmacosx-version-min=10.13', '-Wl']
     runtime_library_dirs = ['@loader_path/../openmm/lib']
 
+install_requires=['openmm==8.2.1rc1']
+if os.environ.get("ACCELERATOR", "").startswith("cu"):
+    install_requires += ['onnxruntime-gpu',
+                         'tensorrt',
+                         'nvidia-cublas-cu12>=12.8,<12.9',
+                         'nvidia-cudnn-cu12',
+                         'nvidia-curand-cu12',
+                         'nvidia-cufft-cu12',
+                         'nvidia-cuda-nvrtc-cu12>=12.8,<12.9',
+                         'nvidia_cuda_runtime_cu12>=12.8,<12.9',
+                         'nvidia_cuda_nvcc_cu12>=12.8,<12.9',
+                         'nvidia_cuda_cupti_cu12>=12.8,<12.9',
+                         'nvidia_nvjitlink_cu12>=12.8,<12.9']
+else:
+    install_requires += ['onnxruntime']
+
 extension = Extension(name='openmmonnx._openmmonnx',
                       sources=['OnnxPluginWrapper.cpp'],
                       libraries=['OpenMM', 'OpenMMONNX'],
@@ -30,5 +46,5 @@ setup(name='OpenMMONNX',
       version='0.1',
       py_modules=['openmmonnx'],
       ext_modules=[extension],
-      install_requires=['openmm==8.2.1rc1']
+      install_requires=install_requires
      )
