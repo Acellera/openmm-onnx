@@ -10,7 +10,7 @@ classifiers = ["Programming Language :: Python :: 3"]
 
 [project.urls]
 "Homepage" = "https://openmm.org"
-"Bug Tracker" = "https://github.com/openmm/openmm/issues"
+"Bug Tracker" = "https://github.com/openmm/openmm-onnx/issues"
 "Download URL" = "https://openmm.org"
 
 [tool.setuptools.packages.find]
