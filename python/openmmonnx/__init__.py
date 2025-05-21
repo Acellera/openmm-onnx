@@ -5,7 +5,8 @@ import platform
 
 SP_DIR = site.getsitepackages()[0]
 
-# Since onnxruntime needs tons of NVIDIA libraries but doesn't set the right RPATH we need to add them here to LD_LIBRARY_PATH
+# Since onnxruntime needs a lot of NVIDIA libraries but doesn't set the right RPATH for the equivalent
+# nvidia PyPI packages, we need to preload them here so they can be found when importing onnxruntime
 libprefix = "lib"
 libext = "so"
 if platform.system() == "Darwin":
