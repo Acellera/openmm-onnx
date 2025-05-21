@@ -7,7 +7,7 @@ openmmonnx_header_dir = '@OPENMMONNX_HEADER_DIR@'
 openmmonnx_library_dir = '@OPENMMONNX_LIBRARY_DIR@'
 
 # setup extra compile and link arguments on Mac
-extra_compile_args=['-std=c++11', '-D_GLIBCXX_USE_CXX11_ABI=1']
+extra_compile_args=['-std=c++14', '-D_GLIBCXX_USE_CXX11_ABI=1']
 extra_link_args = []
 runtime_library_dirs = ["$ORIGIN/../openmm/lib"]
 
