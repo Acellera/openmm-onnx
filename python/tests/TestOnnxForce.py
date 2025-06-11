@@ -3,19 +3,31 @@ import openmm.unit as unit
 import openmmonnx
 import numpy as np
 import pytest
+import os
+
+curr_dir = os.path.dirname(os.path.abspath(__file__))
+test_dir = os.path.join(curr_dir, "..", "..", "tests")
+
 
 def testConstructors():
-    model_file = '../../tests/central.onnx'
+    model_file = os.path.join(test_dir, "central.onnx")
     force = openmmonnx.OnnxForce(model_file)
-    model = open(model_file, 'rb').read()
+    model = open(model_file, "rb").read()
     assert model == force.getModel()
     force = openmmonnx.OnnxForce(model)
     model = force.getModel()
     force = openmmonnx.OnnxForce(model)
 
-@pytest.mark.parametrize('use_cv_force', [True, False])
-@pytest.mark.parametrize('platform', [mm.Platform.getPlatform(i).getName() for i in range(mm.Platform.getNumPlatforms())])
-@pytest.mark.parametrize('particles', [[], [5,3,0]])
+
+@pytest.mark.parametrize("use_cv_force", [True, False])
+@pytest.mark.parametrize(
+    "platform",
+    [
+        mm.Platform.getPlatform(i).getName()
+        for i in range(mm.Platform.getNumPlatforms())
+    ],
+)
+@pytest.mark.parametrize("particles", [[], [5, 3, 0]])
 def testForce(use_cv_force, platform, particles):
 
     # Create a random cloud of particles.
@@ -26,13 +38,15 @@ def testForce(use_cv_force, platform, particles):
         system.addParticle(1.0)
 
     # Create a force
-    force = openmmonnx.OnnxForce('../../tests/central.onnx', {'UseGraphs': 'false'})
+    force = openmmonnx.OnnxForce(
+        os.path.join(test_dir, "central.onnx"), {"UseGraphs": "false"}
+    )
     force.setParticleIndices(particles)
-    assert force.getProperties()['UseGraphs'] == 'false'
+    assert force.getProperties()["UseGraphs"] == "false"
     if use_cv_force:
         # Wrap OnnxForce into CustomCVForce
-        cv_force = mm.CustomCVForce('force')
-        cv_force.addCollectiveVariable('force', force)
+        cv_force = mm.CustomCVForce("force")
+        cv_force.addCollectiveVariable("force", force)
         system.addForce(cv_force)
     else:
         system.addForce(force)
@@ -42,21 +56,31 @@ def testForce(use_cv_force, platform, particles):
     try:
         context = mm.Context(system, integ, mm.Platform.getPlatformByName(platform))
     except:
-        pytest.skip(f'Unable to create Context with {platform}')
+        pytest.skip(f"Unable to create Context with {platform}")
     context.setPositions(positions)
     state = context.getState(getEnergy=True, getForces=True)
 
     # See if the energy and forces are correct.  The network defines a potential of the form E(r) = |r|^2
     if len(particles) > 0:
         positions = positions[particles]
-    expectedEnergy = np.sum(positions*positions)
-    assert np.allclose(expectedEnergy, state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole))
+    expectedEnergy = np.sum(positions * positions)
+    assert np.allclose(
+        expectedEnergy,
+        state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole),
+    )
     forces = state.getForces(asNumpy=True)
     if len(particles) > 0:
         forces = forces[particles]
-    assert np.allclose(-2*positions, forces)
+    assert np.allclose(-2 * positions, forces)
 
-@pytest.mark.parametrize('platform', [mm.Platform.getPlatform(i).getName() for i in range(mm.Platform.getNumPlatforms())])
+
+@pytest.mark.parametrize(
+    "platform",
+    [
+        mm.Platform.getPlatform(i).getName()
+        for i in range(mm.Platform.getNumPlatforms())
+    ],
+)
 def testInputs(platform):
 
     # Create a random cloud of particles.
@@ -67,43 +91,48 @@ def testInputs(platform):
         system.addParticle(1.0)
 
     # Create a force
-    force = openmmonnx.OnnxForce('../../tests/inputs.onnx')
+    force = openmmonnx.OnnxForce("../../tests/inputs.onnx")
     system.addForce(force)
     scale = np.random.randint(5, size=numParticles)
     offset = np.random.rand(numParticles)
-    force.addInput(openmmonnx.IntegerInput('scale', scale, [numParticles]))
-    force.addInput(openmmonnx.FloatInput('offset', offset, [numParticles]))
+    force.addInput(openmmonnx.IntegerInput("scale", scale, [numParticles]))
+    force.addInput(openmmonnx.FloatInput("offset", offset, [numParticles]))
 
     # Compute the forces and energy.
     integ = mm.VerletIntegrator(1.0)
     try:
         context = mm.Context(system, integ, mm.Platform.getPlatformByName(platform))
     except:
-        pytest.skip(f'Unable to create Context with {platform}')
+        pytest.skip(f"Unable to create Context with {platform}")
     context.setPositions(positions)
     state = context.getState(getEnergy=True, getForces=True)
 
     # See if the energy and forces are correct.  The network defines a potential of the form E(r) = scale*(|r|^2-offset).
-    r2 = np.sum(positions*positions, axis=1)
-    expectedEnergy = np.sum(scale*(r2-offset))
-    assert np.allclose(expectedEnergy, state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole))
+    r2 = np.sum(positions * positions, axis=1)
+    expectedEnergy = np.sum(scale * (r2 - offset))
+    assert np.allclose(
+        expectedEnergy,
+        state.getPotentialEnergy().value_in_unit(unit.kilojoules_per_mole),
+    )
     forces = state.getForces(asNumpy=True)
-    assert np.allclose(-2*np.expand_dims(scale, 1)*positions, forces)
+    assert np.allclose(-2 * np.expand_dims(scale, 1) * positions, forces)
 
     # Check that the Python wrappers return the input values correctly.
     assert np.array_equal(scale, force.getInput(0).getValues())
     assert np.allclose(offset, force.getInput(1).getValues())
 
+
 def testProperties():
-    """ Test that the properties are correctly set and retrieved """
-    force = openmmonnx.OnnxForce('../../tests/central.onnx')
-    force.setProperty('UseGraphs', 'true')
-    assert force.getProperties()['UseGraphs'] == 'true'
-    force.setProperty('UseGraphs', 'false')
-    assert force.getProperties()['UseGraphs'] == 'false'
+    """Test that the properties are correctly set and retrieved"""
+    force = openmmonnx.OnnxForce(os.path.join(test_dir, "central.onnx"))
+    force.setProperty("UseGraphs", "true")
+    assert force.getProperties()["UseGraphs"] == "true"
+    force.setProperty("UseGraphs", "false")
+    assert force.getProperties()["UseGraphs"] == "false"
+
 
 def testSerialization():
-    force1 = openmmonnx.OnnxForce('../../tests/central.onnx')
+    force1 = openmmonnx.OnnxForce(os.path.join(test_dir, "central.onnx"))
     xml1 = mm.XmlSerializer.serialize(force1)
     force2 = mm.XmlSerializer.deserialize(xml1)
     xml2 = mm.XmlSerializer.serialize(force2)

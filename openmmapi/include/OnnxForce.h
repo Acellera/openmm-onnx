@@ -32,6 +32,7 @@
  * USE OR OTHER DEALINGS IN THE SOFTWARE.                                     *
  * -------------------------------------------------------------------------- */
 
+#include <stdint.h>
 #include "openmm/Context.h"
 #include "openmm/Force.h"
 #include "internal/windowsExportOnnx.h"
